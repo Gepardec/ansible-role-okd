@@ -1,0 +1,24 @@
+---
+galaxy_info:
+  role_name: okd
+  author: Clemens Kaserer <clemens.kaserer@gepardec.com>
+  description: install okd on CentOS based systems
+  company: Gepardec IT Service GmbH
+  license: GPLv3
+
+  min_ansible_version: 1.2
+
+  platforms:
+  - name: CentOS
+    versions:
+    - 7 and above
+
+  galaxy_tags:
+  - docker
+  - okd
+  - openshift
+  - centos
+  - gepardec
+
+dependencies:
+- gepardec.docker

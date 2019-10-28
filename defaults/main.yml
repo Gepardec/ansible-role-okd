@@ -1,0 +1,5 @@
+---
+# defaults file for okd
+okd_public_hostname: "127.0.0.1"
+okd_oc_client_version: "v3.11.0-0cbc58b"
+okd_adm_user: "admin"

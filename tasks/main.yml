@@ -1,0 +1,158 @@
+---
+# tasks file for okd
+
+- name: check if oc is installed
+  stat:
+    path: /usr/local/bin/oc
+  register: okd_oc_check
+  tags:
+  - always
+
+- name: download oc client binary
+  get_url:
+    url: "https://github.com/openshift/origin/releases/download/v3.11.0/openshift-origin-client-tools-{{ okd_oc_client_version }}-linux-64bit.tar.gz"
+    dest: "/tmp/openshift-origin-client-tools-{{ okd_oc_client_version }}-linux-64bit.tar.gz"
+  when: not okd_oc_check.stat.exists
+  tags:
+  - okd
+  - okd.oc
+  - okd.oc.download
+
+- name: untar oc client binary
+  become: yes
+  unarchive:
+    src: "/tmp/openshift-origin-client-tools-{{ okd_oc_client_version }}-linux-64bit.tar.gz"
+    dest: /usr/local/bin/
+    extra_opts:
+    - "--strip-components=1"
+    remote_src: yes
+  when: not okd_oc_check.stat.exists
+  tags:
+  - okd
+  - okd.oc
+  - okd.oc.tar
+
+- name: set up insecure registry in docker service
+  become: yes
+  copy:
+    dest: "/etc/docker/daemon.json"
+    content: |
+      {
+        "insecure-registries": ["172.30.0.0/16"]
+      }
+  register: okd_insecure_registry
+  tags:
+  - okd
+  - okd.registry
+  - okd.registry.set
+
+- name: restart docker
+  become: yes
+  service:
+    name: docker
+    state: restarted
+  when: okd_insecure_registry.changed
+  tags:
+  - okd
+  - okd.registry
+  - okd.registry.restart
+
+- name: create okd folder structure
+  become: yes
+  file:
+    path: /opt/okd
+    state: directory
+    mode: '0755'
+  tags:
+  - okd
+  - okd.folder
+
+- name: check if okd cluster is up
+  become: yes
+  shell: /usr/local/bin/oc cluster status
+  environment:
+     KUBECONFIG: "/root/.kube/config"
+  register: okd_cluster_status
+  failed_when: false
+  changed_when: false
+  tags:
+  - always
+
+- name: start okd cluster
+  become: yes
+  shell: "/usr/local/bin/oc cluster up --public-hostname={{ okd_public_hostname }} --base-dir=/opt/okd"
+  environment:
+     KUBECONFIG: "/root/.kube/config"
+  vars:
+    ansible_python_interpreter: /usr/bin/python3
+  async: 1800 # 30min Timeout
+  poll: 0
+  when: okd_cluster_status.rc == 1
+  register: okd_cluster_start_sleeper
+  tags:
+  - okd
+  - okd.start
+  - okd.start.async
+
+- name: wait for okd cluster to start
+  async_status:
+    jid: "{{ okd_cluster_start_sleeper.ansible_job_id }}"
+  retries: 300
+  register: okd_cluster_start_result
+  until: okd_cluster_start_result.finished
+  tags:
+  - okd
+  - okd.start
+  - okd.start.wait
+
+- name: "login as system:admin"
+  become: yes
+  shell: "/usr/local/bin/oc login -u system:admin --insecure-skip-tls-verify=true"
+  environment:
+     KUBECONFIG: "/root/.kube/config"
+  changed_when: false
+  tags:
+  - always
+  
+- name: check if admin user exists
+  become: yes
+  shell: '/usr/local/bin/oc get user | /bin/grep "^ {{ okd_adm_user }} "'
+  environment:
+     KUBECONFIG: "/root/.kube/config"
+  register: okd_user_check
+  changed_when: false
+  failed_when: false
+  tags:
+  - always
+
+- name: create admin user
+  become: yes
+  shell: "/usr/local/bin/oc login -u {{ okd_adm_user }} -p {{ okd_adm_user }} --insecure-skip-tls-verify=true https://{{ okd_public_hostname }}:8443"
+  when: okd_user_check.rc == 1
+  register: oc_adm_user_create
+  tags:
+  - okd
+  - okd.admin
+  - okd.admin.create
+
+- name: login as cluster admin
+  become: yes
+  shell: "/usr/local/bin/oc login -u system:admin --insecure-skip-tls-verify=true"
+  environment:
+     KUBECONFIG: "/root/.kube/config"
+  changed_when: false
+  tags:
+  - always
+
+- name: add clusterrole
+  become: yes
+  shell: "/usr/local/bin/oc create clusterrolebinding registry-controller --clusterrole=cluster-admin --user={{ okd_adm_user }}"
+  environment:
+     KUBECONFIG: "/root/.kube/config"
+  when: 
+  - okd_user_check.rc == 1
+  - oc_adm_user_create.changed
+  tags:
+  - okd
+  - okd.admin
+  - okd.admin.role
