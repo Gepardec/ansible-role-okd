@@ -49,7 +49,7 @@
 
 - name: Force all notified handlers to run at this point, not waiting for normal sync points
   meta: flush_handlers
-  
+
 - name: create okd folder structure
   become: yes
   file:
@@ -62,7 +62,7 @@
 
 - name: check if okd cluster is up
   become: yes
-  shell: /usr/local/bin/oc cluster status
+  command: /usr/local/bin/oc cluster status
   environment:
      KUBECONFIG: "/root/.kube/config"
   register: okd_cluster_status
