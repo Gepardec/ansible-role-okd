@@ -40,22 +40,15 @@
       {
         "insecure-registries": ["172.30.0.0/16"]
       }
-  register: okd_insecure_registry
+  notify:
+    - restart docker
   tags:
   - okd
   - okd.registry
   - okd.registry.set
 
-- name: restart docker
-  become: yes
-  service:
-    name: docker
-    state: restarted
-  when: okd_insecure_registry.changed
-  tags:
-  - okd
-  - okd.registry
-  - okd.registry.restart
+- name: Force all notified handlers to run at this point, not waiting for normal sync points
+  meta: flush_handlers
 
 - name: create okd folder structure
   become: yes
@@ -69,7 +62,7 @@
 
 - name: check if okd cluster is up
   become: yes
-  shell: /usr/local/bin/oc cluster status
+  command: /usr/local/bin/oc cluster status
   environment:
      KUBECONFIG: "/root/.kube/config"
   register: okd_cluster_status
@@ -80,7 +73,7 @@
 
 - name: start okd cluster
   become: yes
-  shell: "/usr/local/bin/oc cluster up --public-hostname={{ okd_public_hostname }} --base-dir=/opt/okd"
+  command: "/usr/local/bin/oc cluster up --public-hostname={{ okd_public_hostname }} --base-dir=/opt/okd"
   environment:
      KUBECONFIG: "/root/.kube/config"
   vars:
@@ -107,16 +100,18 @@
 
 - name: "login as system:admin"
   become: yes
-  shell: "/usr/local/bin/oc login -u system:admin --insecure-skip-tls-verify=true"
+  command: "/usr/local/bin/oc login -u system:admin --insecure-skip-tls-verify=true"
   environment:
      KUBECONFIG: "/root/.kube/config"
   changed_when: false
   tags:
   - always
-  
+
 - name: check if admin user exists
   become: yes
-  shell: '/usr/local/bin/oc get user | /bin/grep "^ {{ okd_adm_user }} "'
+  shell: |
+    set -o pipefail
+    /usr/local/bin/oc get user | /bin/grep "^ {{ okd_adm_user }} "
   environment:
      KUBECONFIG: "/root/.kube/config"
   register: okd_user_check
@@ -127,7 +122,7 @@
 
 - name: create admin user
   become: yes
-  shell: "/usr/local/bin/oc login -u {{ okd_adm_user }} -p {{ okd_adm_user }} --insecure-skip-tls-verify=true https://{{ okd_public_hostname }}:8443"
+  command: "/usr/local/bin/oc login -u {{ okd_adm_user }} -p {{ okd_adm_user }} --insecure-skip-tls-verify=true https://{{ okd_public_hostname }}:8443"
   when: okd_user_check.rc == 1
   register: oc_adm_user_create
   tags:
@@ -137,7 +132,7 @@
 
 - name: login as cluster admin
   become: yes
-  shell: "/usr/local/bin/oc login -u system:admin --insecure-skip-tls-verify=true"
+  command: "/usr/local/bin/oc login -u system:admin --insecure-skip-tls-verify=true"
   environment:
      KUBECONFIG: "/root/.kube/config"
   changed_when: false
@@ -146,10 +141,10 @@
 
 - name: add clusterrole
   become: yes
-  shell: "/usr/local/bin/oc create clusterrolebinding registry-controller --clusterrole=cluster-admin --user={{ okd_adm_user }}"
+  command: "/usr/local/bin/oc create clusterrolebinding registry-controller --clusterrole=cluster-admin --user={{ okd_adm_user }}"
   environment:
      KUBECONFIG: "/root/.kube/config"
-  when: 
+  when:
   - okd_user_check.rc == 1
   - oc_adm_user_create.changed
   tags:
