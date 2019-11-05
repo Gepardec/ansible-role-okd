@@ -10,6 +10,7 @@ testinfra_hosts = testinfra.utils.ansible_runner.AnsibleRunner(
 def test_oc_binary(host):
     assert host.file("/usr/local/bin/oc").exists
 
+
 def test_okd_folder(host):
     okd_home = host.file("/opt/okd")
     assert okd_home.exists
