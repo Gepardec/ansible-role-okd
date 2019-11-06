@@ -11,3 +11,7 @@
       raw: test -e /usr/sbin/mkfs.ext4 || (yum install -y e4fsprogs)
       become: true
       changed_when: false
+    - name: create docker config.json
+      raw: mkdir -p /root/.docker && echo "{}" > /root/.docker/config.json
+      become: true
+      changed_when: false
