@@ -16,6 +16,3 @@ def test_okd_folder(host):
     assert okd_home.exists
     assert okd_home.is_directory
 
-
-# def test_okd_cluster(host):
-#     host.process.get(user="root", comm="nginx")

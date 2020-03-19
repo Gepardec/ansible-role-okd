@@ -1,7 +1,7 @@
 ---
 galaxy_info:
   role_name: okd
-  author: Clemens Kaserer <clemens.kaserer@gepardec.com>
+  author: ckaserer
   description: install okd on CentOS based systems
   company: Gepardec IT Service GmbH
   license: GPLv3

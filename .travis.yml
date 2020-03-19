@@ -1,0 +1,43 @@
+---
+version: "~> 1.0"
+os: linux
+language: python
+services:
+  - docker
+notifications:
+  email:
+    on_success: never
+    on_failure: never
+  slack:
+    if: branch = master
+    rooms:
+      secure: ci/yLPi2H2c9r9zOxpAN5PolwzK+Xwi+xKrcwt30Yl307Vxsmt+M9EmawCjpLNR2p5csb14SitxV0f4NHs/FwDxtiyeM04BKqVY3VTKH0VQsljUUBX4SLNlSCDaDjmBFDrZDHY7/lR6viN3ePWYCNBgDLlYOI/W9UqZfAExX/90Q2M0XvOsWucXfuD3m2oXwlAK2SjdV3LEmImeH/8Ymy3+Qj23aIC0gclIYUEMKKZ1CzsIM0mmXBIi3pTA8h3SOHQGEptevQG2tMKaftYX0ZxMm/LrsMPJAR+zTqguMh7NREv+xBqejprdPKGMl/nZ7iAJ1QUFs2gPEtVvu/eulV9lnZyai1D/pnF8y3+JThS60/sDsAAEBCCmf20Ok2T9PTnPRyDuNHxERb1DeUiokj2x4cqQpkE40G9t1LhFxBbxmMdMYarBbG1wB8iC5FSpW12sjDwoZzyKVFVQwfLtQgkOpHHQkJdFPoU97NqxLHBO7MxRpyHsGoRLliD3Fb4p0HF25qcKDNO4NeBLKC+yC1vWBXZl/B285FZQhzsPcjwcUTaNK3n95dvvjx5yMMYR8oMn8Wfp6hm+udZ3Z78LS4ab8GsMACMS9hXMtE1Z4C+UMlXFeoeXenGY2tpOcou3VyscxFt8VzH2ZkyDyLqXJNK2Nc1iolWUuM6qrPPHWf0Q=
+    template:
+      - "%{commit_subject}"
+      - build <%{build_url}|#%{build_number}> (<%{compare_url}|%{commit}>) @%{branch}
+      - by %{author} %{result} in %{duration}
+    on_success: change
+    on_failure: always
+  webhooks: https://galaxy.ansible.com/api/v1/notifications/
+install:
+  - sudo pip install molecule yamllint ansible-lint pyopenssl --ignore-installed PyYAML
+scripts:
+  - sudo molecule converge --scenario-name local
+  - sudo molecule verify --scenario-name local
+
+# Issue: containerized standard scenario fails with
+# fatal: [instance-1]: FAILED! => {"ansible_job_id": "256126375414.1122", "attempts": 6, "changed": true, "cmd": ["/usr/local/bin/oc", "cluster", "up", "--public-hostname=127.0.0.1", "--base-dir=/opt/okd"], "delta": "0:00:22.561270", "end": "2020-03-19 08:32:24.604809", "finished": 1, "msg": "non-zero return code", "rc": 1, "start": "2020-03-19 08:32:02.043539", "stderr": "error: cannot create volume share", "stderr_lines": ["error: cannot create volume share"], "stdout": "Getting a Docker client ...\nChecking if image openshift/origin-control-plane:v3.11 is available ...\nPulling image openshift/origin-control-plane:v3.11\nPulled 2/5 layers, 40% complete\nPulled 3/5 layers, 73% complete\nPulled 4/5 layers, 81% complete\nPulled 5/5 layers, 100% complete\nExtracting\nImage pull complete\nPulling image openshift/origin-cli:v3.11\nImage pull complete\nPulling image openshift/origin-node:v3.11\nPulled 6/6 layers, 100% complete\nExtracting\nImage pull complete\nCreating shared mount directory on the remote host ...", "stdout_lines": ["Getting a Docker client ...", "Checking if image openshift/origin-control-plane:v3.11 is available ...", "Pulling image openshift/origin-control-plane:v3.11", "Pulled 2/5 layers, 40% complete", "Pulled 3/5 layers, 73% complete", "Pulled 4/5 layers, 81% complete", "Pulled 5/5 layers, 100% complete", "Extracting", "Image pull complete", "Pulling image openshift/origin-cli:v3.11", "Image pull complete", "Pulling image openshift/origin-node:v3.11", "Pulled 6/6 layers, 100% complete", "Extracting", "Image pull complete", "Creating shared mount directory on the remote host ..."]}
+# Resolution: run directly on travis vm instead of container in container
+
+# Issue: local scenario without sudo fails with
+# An exception occurred during task execution. To see the full traceback, use -vvv. The error was: PermissionError: [Errno 13] Permission denied: '/etc/apt/sources.list.d/.pgdg.list-gl8hiexx'
+# fatal: [instance]: FAILED! => {"changed": false, "module_stderr": "Traceback (most recent call last):\n  File \"/tmp/ansible_apt_repository_payload_ym2lbuna/ansible_apt_repository_payload.zip/ansible/modules/packaging/os/apt_repository.py\", line 545, in main\n  File \"/tmp/ansible_apt_repository_payload_ym2lbuna/ansible_apt_repository_payload.zip/ansible/modules/packaging/os/apt_repository.py\", line 290, in save\n  File \"/usr/lib/python3.5/tempfile.py\", line 481, in mkstemp\n    return _mkstemp_inner(dir, prefix, suffix, flags, output_type)\n  File \"/usr/lib/python3.5/tempfile.py\", line 399, in _mkstemp_inner\n    fd = _os.open(file, flags, 0o600)\nPermissionError: [Errno 13] Permission denied: '/etc/apt/sources.list.d/.pgdg.list-ao4bky_b'\n\nDuring handling of the above exception, another exception occurred:\n\nTraceback (most recent call last):\n  File \"<stdin>\", line 102, in <module>\n  File \"<stdin>\", line 94, in _ansiballz_main\n  File \"<stdin>\", line 40, in invoke_module\n  File \"/usr/lib/python3.5/runpy.py\", line 196, in run_module\n    return _run_module_code(code, init_globals, run_name, mod_spec)\n  File \"/usr/lib/python3.5/runpy.py\", line 96, in _run_module_code\n    mod_name, mod_spec, pkg_name, script_name)\n  File \"/usr/lib/python3.5/runpy.py\", line 85, in _run_code\n    exec(code, run_globals)\n  File \"/tmp/ansible_apt_repository_payload_ym2lbuna/ansible_apt_repository_payload.zip/ansible/modules/packaging/os/apt_repository.py\", line 564, in <module>\n  File \"/tmp/ansible_apt_repository_payload_ym2lbuna/ansible_apt_repository_payload.zip/ansible/modules/packaging/os/apt_repository.py\", line 556, in main\n  File \"/tmp/ansible_apt_repository_payload_ym2lbuna/ansible_apt_repository_payload.zip/ansible/modules/packaging/os/apt_repository.py\", line 290, in save\n  File \"/usr/lib/python3.5/tempfile.py\", line 481, in mkstemp\n    return _mkstemp_inner(dir, prefix, suffix, flags, output_type)\n  File \"/usr/lib/python3.5/tempfile.py\", line 399, in _mkstemp_inner\n    fd = _os.open(file, flags, 0o600)\nPermissionError: [Errno 13] Permission denied: '/etc/apt/sources.list.d/.pgdg.list-gl8hiexx'\n", "module_stdout": "", "msg": "MODULE FAILURE\nSee stdout/stderr for the exact error", "rc": 1}
+# Resolution: run molecule as root
+
+# Issue: running with sudo fails with
+# Cannot uninstall 'PyYAML'. It is a distutils installed project and thus we cannot accurately determine which files belong to it which would lead to only a partial uninstall.
+# Resoulution: add --ignore-installed PyYAML to pip install
+
+# Issue: sudo molecule converge --scenario-name local fails with
+# AttributeError: 'module' object has no attribute 'SSL_ST_INIT'
+# Resolution: add pip install pyopenssl

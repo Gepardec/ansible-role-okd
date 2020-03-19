@@ -1,6 +1,19 @@
 ---
 # tasks file for okd
 
+- name: Create /root/.docker if it does not exist
+  file:
+    path: /root/.docker
+    state: directory
+    mode: '0755'
+  register: docker_mkdir_result
+
+- name: create docker config.json
+  copy:
+    dest: "/root/.docker/config.json"
+    content: "{}"
+  when: docker_mkdir_result.changed
+
 - name: check if oc is installed
   stat:
     path: /usr/local/bin/oc
@@ -93,6 +106,7 @@
   retries: 300
   register: okd_cluster_start_result
   until: okd_cluster_start_result.finished
+  when: okd_cluster_status.rc == 1
   tags:
   - okd
   - okd.start
