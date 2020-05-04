@@ -1,6 +1,7 @@
 ---
 version: "~> 1.0"
 os: linux
+dist: xenial
 language: python
 services:
   - docker
@@ -21,7 +22,7 @@ notifications:
   webhooks: https://galaxy.ansible.com/api/v1/notifications/
 install:
   - sudo pip install molecule yamllint ansible-lint pyopenssl --ignore-installed PyYAML
-scripts:
+script:
   - sudo molecule converge --scenario-name local
   - sudo molecule verify --scenario-name local
 
