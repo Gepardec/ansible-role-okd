@@ -23,4 +23,4 @@ galaxy_info:
   - gepardec
 
 dependencies:
-- gepardec.docker
+- geerlingguy.docker

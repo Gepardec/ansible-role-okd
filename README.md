@@ -7,17 +7,21 @@
 <br>
 <br>
 
+# Archived Repository!
+
+The installation mechanism for okd has been updated with version 4.x. The new installation procedure is similar to the installation procedure for OpenShift. okd is no longer a platform that you can install on a supported operating system. Starting with version 4 it is shipped with it is own operating system - Fedora CoreOS. As the installation of an operating system is not typically covered via ansible we have decided to archive our okd ansible role.
+
+---
+
 # Ansible Role: OKD
 
-An Ansible Role that installs okd 3.11 on centos based systems via oc cluster up. Once there is an OKD installation mechanism for okd 4.x we will update the role accordingly. At the time of writing this readme the roadmap for okd 4.x which includesan install mechanism for okd 4.x has been added to the [openshift/community](https://github.com/openshift/community) repo via  [pull request 55](https://github.com/openshift/community/pull/55) on 28.10.2019.
+An Ansible Role to install okd 3.11 on CentOS based systems via oc cluster up.
 
 ## Role Variables
 
-`okd` role depends on `gepardec.docker` role. As such the variable(s) defined in those
-roles can be used here as well.
+`okd` role depends on `geerlingguy.docker` role. As such the variable(s) defined in those roles can be used here as well.
 
-`okd_adm_user` specifies which user should own the  docker commands.
-By default the value is "vagrant".
+`okd_adm_user` specifies which user should own the  docker commands. By default the value is "vagrant".
 
 `okd_oc_client_version` specifies the okd version for which the client binary gets
 installed and conesquently the cluster version that derives the version from the
@@ -30,7 +34,7 @@ e.g. myhostname results in following URL for the console: https://myhostname:844
 
 required ansible galaxy roles
 
-- gepardec.docker
+- geerlingguy.docker
 
 ## Example Playbook
 
